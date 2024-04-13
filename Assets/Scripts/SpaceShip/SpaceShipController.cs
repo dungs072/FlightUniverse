@@ -6,12 +6,17 @@ using UnityEngine.InputSystem;
 using UnityEditor.ShaderGraph.Internal;
 public class SpaceShipController : NetworkBehaviour
 {
+    [Header("Mechanic")]
+    [SerializeField] private MechanicController mechanicController;
+
+    [Header("Attributes")]
     [SerializeField] private float forwardSpeed = 25f;
     [SerializeField] private float strafeSpeed = 7.5f;
     [SerializeField] private float hoverSpeed = 5f;
     [SerializeField] private float lookRateSpeed = 90f;
     [SerializeField] private float rollSpeed = 90f;
     [SerializeField] private float rollAcceleration = 3.5f;
+    [SerializeField] private float thrustSpeed = 100f;
     private float activeForwardSpeed;
     private float activeStrafeSpeed;
     private float activeHoverSpeed;
@@ -22,7 +27,9 @@ public class SpaceShipController : NetworkBehaviour
     private float rollValue;
     private float rollInput;
     private float hoverInput;
+    private float thrustValue = 1f;
     private Controls controls;
+    private Rigidbody rb;
     private void Awake()
     {
         controls = new Controls();
@@ -37,9 +44,12 @@ public class SpaceShipController : NetworkBehaviour
     }
     private void Start()
     {
+        rb = GetComponent<Rigidbody>();
         screenCenter.x = Screen.width / 2;
         screenCenter.y = Screen.height / 2;
         Cursor.lockState = CursorLockMode.Confined;
+        mechanicController.ToggleForwardTrail(false);
+        mechanicController.ToggleBackwardTrails(false);
         InputRegister();
     }
     private void InputRegister()
@@ -50,6 +60,8 @@ public class SpaceShipController : NetworkBehaviour
         controls.Player.Roll.canceled += OnRoll;
         controls.Player.UpDown.performed += OnUpDown;
         controls.Player.UpDown.canceled += OnUpDown;
+        controls.Player.Thrust.performed += OnThrust;
+        controls.Player.Thrust.canceled += OnUnThrust;
     }
     private void Update()
     {
@@ -70,13 +82,33 @@ public class SpaceShipController : NetworkBehaviour
         activeStrafeSpeed = Mathf.Lerp(activeStrafeSpeed, moveInput.x * strafeSpeed, strafeAcceleration * Time.deltaTime);
         activeHoverSpeed = Mathf.Lerp(activeHoverSpeed, hoverInput * hoverSpeed, hoverAcceleration * Time.deltaTime);
 
-        transform.position += transform.forward * activeForwardSpeed * Time.deltaTime;
+        transform.position += transform.forward * activeForwardSpeed * thrustValue * Time.deltaTime;
         transform.position += (transform.right * activeStrafeSpeed * Time.deltaTime) + (transform.up * activeHoverSpeed * Time.deltaTime);
+    }
+    private void ResetRigidbody()
+    {
+        rb.velocity = Vector3.zero;
+        rb.angularVelocity = Vector3.zero;
     }
     #region Input
     private void OnMove(InputAction.CallbackContext ctx)
     {
         moveInput = ctx.ReadValue<Vector2>();
+        ResetRigidbody();
+        if (moveInput.y == 1)
+        {
+            mechanicController.ToggleForwardTrail(true);
+
+        }
+        else if (moveInput.y == -1)
+        {
+            mechanicController.ToggleBackwardTrails(true);
+        }
+        else
+        {
+            mechanicController.ToggleForwardTrail(false);
+            mechanicController.ToggleBackwardTrails(false);
+        }
     }
     private void OnRoll(InputAction.CallbackContext ctx)
     {
@@ -85,6 +117,14 @@ public class SpaceShipController : NetworkBehaviour
     private void OnUpDown(InputAction.CallbackContext ctx)
     {
         hoverInput = ctx.ReadValue<float>();
+    }
+    private void OnThrust(InputAction.CallbackContext ctx)
+    {
+        thrustValue = thrustSpeed;
+    }
+    private void OnUnThrust(InputAction.CallbackContext ctx)
+    {
+        thrustValue = 1f;
     }
     #endregion
 }
