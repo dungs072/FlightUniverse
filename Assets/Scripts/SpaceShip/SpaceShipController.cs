@@ -3,7 +3,6 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
-using UnityEditor.ShaderGraph.Internal;
 public class SpaceShipController : NetworkBehaviour
 {
     [Header("Mechanic")]
@@ -30,6 +29,8 @@ public class SpaceShipController : NetworkBehaviour
     private float thrustValue = 1f;
     private Controls controls;
     private Rigidbody rb;
+    // network vars
+    //private NetworkVariable<Vector3> Position = new NetworkVariable<Vector3>();
     private void Awake()
     {
         controls = new Controls();
@@ -42,15 +43,27 @@ public class SpaceShipController : NetworkBehaviour
     {
         controls.Player.Disable();
     }
-    private void Start()
+    public override void OnNetworkSpawn()
     {
-        rb = GetComponent<Rigidbody>();
-        screenCenter.x = Screen.width / 2;
-        screenCenter.y = Screen.height / 2;
-        Cursor.lockState = CursorLockMode.Confined;
-        mechanicController.ToggleForwardTrail(false);
-        mechanicController.ToggleBackwardTrails(false);
-        InputRegister();
+        if (IsOwner)
+        {
+            rb = GetComponent<Rigidbody>();
+            screenCenter.x = Screen.width / 2;
+            screenCenter.y = Screen.height / 2;
+            Cursor.lockState = CursorLockMode.Confined;
+            mechanicController.ToggleForwardTrail(false);
+            mechanicController.ToggleBackwardTrails(false);
+            InputRegister();
+            NetworkRegister();
+            NetworkManager.Singleton.GetComponent<MyNetworkManager>().CinemachineVirtual.Follow = transform;
+            NetworkManager.Singleton.GetComponent<MyNetworkManager>().CinemachineVirtual.LookAt = transform;
+            rb.isKinematic = false;
+        }
+
+    }
+    private void NetworkRegister()
+    {
+        //Position.OnValueChanged+=OnPositionChanged;
     }
     private void InputRegister()
     {
@@ -65,6 +78,7 @@ public class SpaceShipController : NetworkBehaviour
     }
     private void Update()
     {
+        if (!IsOwner) { return; }
         HandleMovement();
     }
 
@@ -81,9 +95,10 @@ public class SpaceShipController : NetworkBehaviour
         activeForwardSpeed = Mathf.Lerp(activeForwardSpeed, moveInput.y * forwardSpeed, forwardAcceleration * Time.deltaTime);
         activeStrafeSpeed = Mathf.Lerp(activeStrafeSpeed, moveInput.x * strafeSpeed, strafeAcceleration * Time.deltaTime);
         activeHoverSpeed = Mathf.Lerp(activeHoverSpeed, hoverInput * hoverSpeed, hoverAcceleration * Time.deltaTime);
-
         transform.position += transform.forward * activeForwardSpeed * thrustValue * Time.deltaTime;
         transform.position += (transform.right * activeStrafeSpeed * Time.deltaTime) + (transform.up * activeHoverSpeed * Time.deltaTime);
+        // Position.Value += transform.forward * activeForwardSpeed * thrustValue * Time.deltaTime;
+        // Position.Value += (transform.right * activeStrafeSpeed * Time.deltaTime) + (transform.up * activeHoverSpeed * Time.deltaTime);
     }
     private void ResetRigidbody()
     {
@@ -93,6 +108,7 @@ public class SpaceShipController : NetworkBehaviour
     #region Input
     private void OnMove(InputAction.CallbackContext ctx)
     {
+        if (!IsOwner) { return; }
         moveInput = ctx.ReadValue<Vector2>();
         ResetRigidbody();
         if (moveInput.y == 1)
@@ -112,18 +128,22 @@ public class SpaceShipController : NetworkBehaviour
     }
     private void OnRoll(InputAction.CallbackContext ctx)
     {
+        if (!IsOwner) { return; }
         rollInput = ctx.ReadValue<float>();
     }
     private void OnUpDown(InputAction.CallbackContext ctx)
     {
+        if (!IsOwner) { return; }
         hoverInput = ctx.ReadValue<float>();
     }
     private void OnThrust(InputAction.CallbackContext ctx)
     {
+        if (!IsOwner) { return; }
         thrustValue = thrustSpeed;
     }
     private void OnUnThrust(InputAction.CallbackContext ctx)
     {
+        if (!IsOwner) { return; }
         thrustValue = 1f;
     }
     #endregion
