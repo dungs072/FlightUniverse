@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using UnityEngine;
 using Unity.Netcode;
 using UnityEngine.InputSystem;
+using UnityEditor.ShaderGraph.Internal;
 public class SpaceShipController : NetworkBehaviour
 {
     [SerializeField] private float forwardSpeed = 25f;
@@ -17,43 +18,73 @@ public class SpaceShipController : NetworkBehaviour
     private float forwardAcceleration = 2.5f;
     private float strafeAcceleration = 2f;
     private float hoverAcceleration = 2f;
-    private Vector2 lookInput, screenCenter, mouseDistance,moveInput;
+    private Vector2 lookInput, screenCenter, mouseDistance, moveInput;
+    private float rollValue;
     private float rollInput;
+    private float hoverInput;
     private Controls controls;
-    private void Awake() {
+    private void Awake()
+    {
         controls = new Controls();
     }
-    private void OnEnable() {
+    private void OnEnable()
+    {
         controls.Player.Enable();
     }
-    private void OnDisable() {
+    private void OnDisable()
+    {
         controls.Player.Disable();
     }
-    private void Start() {
+    private void Start()
+    {
         screenCenter.x = Screen.width / 2;
         screenCenter.y = Screen.height / 2;
         Cursor.lockState = CursorLockMode.Confined;
-        controls.Player.Move.performed+=OnMove;
-        controls.Player.Move.canceled+=OnMove;
+        InputRegister();
     }
-    private void Update() {
-        lookInput.x = Input.mousePosition.x;
-        lookInput.y = Input.mousePosition.y;
-        mouseDistance.x = (lookInput.x-screenCenter.x)/screenCenter.y;
-        mouseDistance.y = (lookInput.y-screenCenter.y)/screenCenter.y;
-        mouseDistance = Vector2.ClampMagnitude(mouseDistance,1f);
-        rollInput = Mathf.Lerp(rollInput,Input.GetAxisRaw("Roll"),rollAcceleration*Time.deltaTime);
-        transform.Rotate(-mouseDistance.y*lookRateSpeed*Time.deltaTime,mouseDistance.x*lookRateSpeed*Time.deltaTime, rollInput*rollSpeed*Time.deltaTime,Space.Self);
-
-        activeForwardSpeed = Mathf.Lerp(activeForwardSpeed,Input.GetAxisRaw("Vertical")*forwardSpeed,forwardAcceleration*Time.deltaTime);
-        activeStrafeSpeed = Mathf.Lerp(activeStrafeSpeed,Input.GetAxisRaw("Horizontal")*strafeSpeed,strafeAcceleration*Time.deltaTime);
-        activeHoverSpeed = Mathf.Lerp(activeHoverSpeed,Input.GetAxisRaw("Hover")*hoverSpeed,hoverAcceleration*Time.deltaTime);
-
-        transform.position+=transform.forward*activeForwardSpeed*Time.deltaTime;
-        transform.position+=(transform.right*activeStrafeSpeed*Time.deltaTime)+(transform.up*activeHoverSpeed*Time.deltaTime);
+    private void InputRegister()
+    {
+        controls.Player.Move.performed += OnMove;
+        controls.Player.Move.canceled += OnMove;
+        controls.Player.Roll.performed += OnRoll;
+        controls.Player.Roll.canceled += OnRoll;
+        controls.Player.UpDown.performed += OnUpDown;
+        controls.Player.UpDown.canceled += OnUpDown;
     }
+    private void Update()
+    {
+        HandleMovement();
+    }
+
+    private void HandleMovement()
+    {
+        Vector2 mousePosition = Mouse.current.position.ReadValue();
+        lookInput = mousePosition;
+        mouseDistance.x = (lookInput.x - screenCenter.x) / screenCenter.y;
+        mouseDistance.y = (lookInput.y - screenCenter.y) / screenCenter.y;
+        mouseDistance = Vector2.ClampMagnitude(mouseDistance, 1f);
+        rollValue = Mathf.Lerp(rollValue, rollInput, rollAcceleration * Time.deltaTime);
+        transform.Rotate(-mouseDistance.y * lookRateSpeed * Time.deltaTime, mouseDistance.x * lookRateSpeed * Time.deltaTime, rollValue * rollSpeed * Time.deltaTime, Space.Self);
+
+        activeForwardSpeed = Mathf.Lerp(activeForwardSpeed, moveInput.y * forwardSpeed, forwardAcceleration * Time.deltaTime);
+        activeStrafeSpeed = Mathf.Lerp(activeStrafeSpeed, moveInput.x * strafeSpeed, strafeAcceleration * Time.deltaTime);
+        activeHoverSpeed = Mathf.Lerp(activeHoverSpeed, hoverInput * hoverSpeed, hoverAcceleration * Time.deltaTime);
+
+        transform.position += transform.forward * activeForwardSpeed * Time.deltaTime;
+        transform.position += (transform.right * activeStrafeSpeed * Time.deltaTime) + (transform.up * activeHoverSpeed * Time.deltaTime);
+    }
+    #region Input
     private void OnMove(InputAction.CallbackContext ctx)
     {
         moveInput = ctx.ReadValue<Vector2>();
     }
+    private void OnRoll(InputAction.CallbackContext ctx)
+    {
+        rollInput = ctx.ReadValue<float>();
+    }
+    private void OnUpDown(InputAction.CallbackContext ctx)
+    {
+        hoverInput = ctx.ReadValue<float>();
+    }
+    #endregion
 }
