@@ -177,7 +177,7 @@ MonoBehaviour:
   m_Script: {fileID: 11500000, guid: 91923a559febbd04a9065e7a883968cb, type: 3}
   m_Name: 
   m_EditorClassIdentifier: 
-  projectile: {fileID: -5060082374776042639, guid: ce3b2a31b6b170743be8ed45d1b557b1,
+  projectilePrefab: {fileID: 4648053169724106840, guid: ce3b2a31b6b170743be8ed45d1b557b1,
     type: 3}
   spawnProjectilePos:
   - {fileID: 6985716641891095852}
