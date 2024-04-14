@@ -5,6 +5,8 @@ using Unity.Netcode;
 using UnityEngine.InputSystem;
 public class SpaceShipController : NetworkBehaviour
 {
+    [Header("Attack")]
+    [SerializeField] private Fighter fighter;
     [Header("Mechanic")]
     [SerializeField] private MechanicController mechanicController;
 
@@ -75,11 +77,14 @@ public class SpaceShipController : NetworkBehaviour
         controls.Player.UpDown.canceled += OnUpDown;
         controls.Player.Thrust.performed += OnThrust;
         controls.Player.Thrust.canceled += OnUnThrust;
+        // controls.Player.Attack.performed+=OnAttack;
+        // controls.Player.Attack.canceled += OnAttack;
     }
     private void Update()
     {
         if (!IsOwner) { return; }
         HandleMovement();
+        HandleAttack();
     }
 
     private void HandleMovement()
@@ -99,6 +104,13 @@ public class SpaceShipController : NetworkBehaviour
         transform.position += (transform.right * activeStrafeSpeed * Time.deltaTime) + (transform.up * activeHoverSpeed * Time.deltaTime);
         // Position.Value += transform.forward * activeForwardSpeed * thrustValue * Time.deltaTime;
         // Position.Value += (transform.right * activeStrafeSpeed * Time.deltaTime) + (transform.up * activeHoverSpeed * Time.deltaTime);
+    }
+    private void HandleAttack()
+    {
+        if(controls.Player.Attack.IsPressed())
+        {
+            fighter.Attack();
+        }
     }
     private void ResetRigidbody()
     {
@@ -145,6 +157,10 @@ public class SpaceShipController : NetworkBehaviour
     {
         if (!IsOwner) { return; }
         thrustValue = 1f;
+    }
+    private void OnAttack(InputAction.CallbackContext ctx)
+    {
+        fighter.Attack();
     }
     #endregion
 }

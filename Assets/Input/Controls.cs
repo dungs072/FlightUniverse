@@ -62,6 +62,15 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""processors"": """",
                     ""interactions"": """",
                     ""initialStateCheck"": true
+                },
+                {
+                    ""name"": ""Attack"",
+                    ""type"": ""Button"",
+                    ""id"": ""073e2045-303a-4145-8e31-bbbd4716b86e"",
+                    ""expectedControlType"": ""Button"",
+                    ""processors"": """",
+                    ""interactions"": ""Hold"",
+                    ""initialStateCheck"": false
                 }
             ],
             ""bindings"": [
@@ -251,6 +260,17 @@ public partial class @Controls: IInputActionCollection2, IDisposable
                     ""action"": ""UpDown"",
                     ""isComposite"": false,
                     ""isPartOfComposite"": true
+                },
+                {
+                    ""name"": """",
+                    ""id"": ""e6e379f9-3d11-43fa-b787-2e678b89942e"",
+                    ""path"": ""<Mouse>/leftButton"",
+                    ""interactions"": """",
+                    ""processors"": """",
+                    ""groups"": ""KeyBoard & Mouse"",
+                    ""action"": ""Attack"",
+                    ""isComposite"": false,
+                    ""isPartOfComposite"": false
                 }
             ]
         }
@@ -280,6 +300,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         m_Player_Thrust = m_Player.FindAction("Thrust", throwIfNotFound: true);
         m_Player_Roll = m_Player.FindAction("Roll", throwIfNotFound: true);
         m_Player_UpDown = m_Player.FindAction("UpDown", throwIfNotFound: true);
+        m_Player_Attack = m_Player.FindAction("Attack", throwIfNotFound: true);
     }
 
     public void Dispose()
@@ -345,6 +366,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
     private readonly InputAction m_Player_Thrust;
     private readonly InputAction m_Player_Roll;
     private readonly InputAction m_Player_UpDown;
+    private readonly InputAction m_Player_Attack;
     public struct PlayerActions
     {
         private @Controls m_Wrapper;
@@ -353,6 +375,7 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         public InputAction @Thrust => m_Wrapper.m_Player_Thrust;
         public InputAction @Roll => m_Wrapper.m_Player_Roll;
         public InputAction @UpDown => m_Wrapper.m_Player_UpDown;
+        public InputAction @Attack => m_Wrapper.m_Player_Attack;
         public InputActionMap Get() { return m_Wrapper.m_Player; }
         public void Enable() { Get().Enable(); }
         public void Disable() { Get().Disable(); }
@@ -374,6 +397,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @UpDown.started += instance.OnUpDown;
             @UpDown.performed += instance.OnUpDown;
             @UpDown.canceled += instance.OnUpDown;
+            @Attack.started += instance.OnAttack;
+            @Attack.performed += instance.OnAttack;
+            @Attack.canceled += instance.OnAttack;
         }
 
         private void UnregisterCallbacks(IPlayerActions instance)
@@ -390,6 +416,9 @@ public partial class @Controls: IInputActionCollection2, IDisposable
             @UpDown.started -= instance.OnUpDown;
             @UpDown.performed -= instance.OnUpDown;
             @UpDown.canceled -= instance.OnUpDown;
+            @Attack.started -= instance.OnAttack;
+            @Attack.performed -= instance.OnAttack;
+            @Attack.canceled -= instance.OnAttack;
         }
 
         public void RemoveCallbacks(IPlayerActions instance)
@@ -422,5 +451,6 @@ public partial class @Controls: IInputActionCollection2, IDisposable
         void OnThrust(InputAction.CallbackContext context);
         void OnRoll(InputAction.CallbackContext context);
         void OnUpDown(InputAction.CallbackContext context);
+        void OnAttack(InputAction.CallbackContext context);
     }
 }
