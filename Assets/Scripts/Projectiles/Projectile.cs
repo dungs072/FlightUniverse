@@ -8,6 +8,7 @@ public class Projectile : NetworkBehaviour
     [SerializeField] private TrailRenderer trailRenderer;
     [SerializeField] private float forceSpeed = 100f;
     [SerializeField] private float timeDestroyed = 5f;
+    [SerializeField] private GameObject hitVFX;
     private GameObject projectilePrefab;
     private Rigidbody rb;
     private void Awake()
@@ -33,6 +34,14 @@ public class Projectile : NetworkBehaviour
         rb.velocity = Vector3.zero;
         rb.angularVelocity = Vector3.zero;
 
+    }
+    private void OnTriggerEnter(Collider other) {
+        var poolObj = NetworkObjectPool.Singleton.GetNetworkObject(hitVFX,transform.position,transform.rotation);
+        if(poolObj.TryGetComponent(out VFXControls vFXControls))
+        {
+            vFXControls.SetVFXPrefab(poolObj.gameObject);
+        }
+        NetworkObjectPool.Singleton.ReturnNetworkObject(GetComponent<NetworkObject>(), projectilePrefab);
     }
     private IEnumerator DestroyProjectile()
     {
