@@ -53,19 +53,14 @@ public class SpaceShipController : NetworkBehaviour
             screenCenter.x = Screen.width / 2;
             screenCenter.y = Screen.height / 2;
             Cursor.lockState = CursorLockMode.Confined;
-            mechanicController.ToggleForwardTrail(false);
-            mechanicController.ToggleBackwardTrails(false);
+            mechanicController.HandleToggleForwardTrail(false);
+            mechanicController.HandleToggleBackwardTrails(false);
             InputRegister();
-            NetworkRegister();
             NetworkManager.Singleton.GetComponent<MyNetworkManager>().CinemachineVirtual.Follow = transform;
             NetworkManager.Singleton.GetComponent<MyNetworkManager>().CinemachineVirtual.LookAt = transform;
             rb.isKinematic = false;
         }
 
-    }
-    private void NetworkRegister()
-    {
-        //Position.OnValueChanged+=OnPositionChanged;
     }
     private void InputRegister()
     {
@@ -125,17 +120,17 @@ public class SpaceShipController : NetworkBehaviour
         ResetRigidbody();
         if (moveInput.y == 1)
         {
-            mechanicController.ToggleForwardTrail(true);
+            mechanicController.HandleToggleForwardTrail(true);
 
         }
         else if (moveInput.y == -1)
         {
-            mechanicController.ToggleBackwardTrails(true);
+            mechanicController.HandleToggleBackwardTrails(true);
         }
         else
         {
-            mechanicController.ToggleForwardTrail(false);
-            mechanicController.ToggleBackwardTrails(false);
+            mechanicController.HandleToggleForwardTrail(false);
+            mechanicController.HandleToggleBackwardTrails(false);
         }
     }
     private void OnRoll(InputAction.CallbackContext ctx)

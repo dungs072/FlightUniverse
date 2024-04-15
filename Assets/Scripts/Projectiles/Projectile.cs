@@ -34,18 +34,6 @@ public class Projectile : NetworkBehaviour
         rb.angularVelocity = Vector3.zero;
 
     }
-    [ClientRpc]
-    private void DisableClientRpc()
-    {
-        if (IsOwner) { return; }
-        gameObject.SetActive(false);
-    }
-    [ClientRpc]
-    private void EnableClientRpc()
-    {
-        if (IsOwner) { return; }
-        gameObject.SetActive(true);
-    }
     private IEnumerator DestroyProjectile()
     {
         yield return new WaitForSeconds(timeDestroyed);

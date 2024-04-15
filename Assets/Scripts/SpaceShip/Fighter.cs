@@ -10,10 +10,8 @@ public class Fighter : NetworkBehaviour
     [SerializeField] private float fireRate = 0.3f;
     private bool canFire = true;
     public void Attack()
-    {   
-        if(!canFire){return;}
-        canFire = false;
-        Invoke(nameof(Fire),fireRate);
+    {
+        FireServerRpc();
     }
     private void Fire()
     {
@@ -21,17 +19,24 @@ public class Fighter : NetworkBehaviour
         {
             var obj = NetworkObjectPool.Singleton.GetNetworkObject(projectilePrefab, pos.position, pos.rotation);
             obj.transform.forward = pos.forward;
-            if(obj.TryGetComponent(out Projectile projectile))
+            if (obj.TryGetComponent(out Projectile projectile))
             {
                 projectile.SetProjectilePrefab(projectilePrefab);
             }
-            
+
         }
         canFire = true;
     }
     [ServerRpc]
     private void FireServerRpc()
     {
-       
+        FireClientRpc();
+    }
+    [ClientRpc]
+    private void FireClientRpc()
+    {
+        if (!canFire) { return; }
+        canFire = false;
+        Invoke(nameof(Fire), fireRate);
     }
 }
