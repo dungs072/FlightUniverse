@@ -36,6 +36,8 @@ public class Projectile : NetworkBehaviour
 
     }
     private void OnTriggerEnter(Collider other) {
+    }
+    private void OnCollisionEnter(Collision other) {
         var poolObj = NetworkObjectPool.Singleton.GetNetworkObject(hitVFX,transform.position,transform.rotation);
         if(poolObj.TryGetComponent(out VFXControls vFXControls))
         {

@@ -9,6 +9,8 @@ public class SpaceShipController : NetworkBehaviour
     [SerializeField] private Fighter fighter;
     [Header("Mechanic")]
     [SerializeField] private MechanicController mechanicController;
+    [SerializeField] private Transform followTransform;
+    [SerializeField] private LayerMask layerMask;
 
     [Header("Attributes")]
     [SerializeField] private float forwardSpeed = 25f;
@@ -53,12 +55,14 @@ public class SpaceShipController : NetworkBehaviour
             screenCenter.x = Screen.width / 2;
             screenCenter.y = Screen.height / 2;
             Cursor.lockState = CursorLockMode.Confined;
+            Cursor.visible = false;
             mechanicController.HandleToggleForwardTrail(false);
             mechanicController.HandleToggleBackwardTrails(false);
             InputRegister();
-            NetworkManager.Singleton.GetComponent<MyNetworkManager>().CinemachineVirtual.Follow = transform;
-            NetworkManager.Singleton.GetComponent<MyNetworkManager>().CinemachineVirtual.LookAt = transform;
+            CameraController.instance.targetPoint = followTransform;
             rb.isKinematic = false;
+            UIManager.Instance.CrossHair.SetSpaceShip(transform);
+            ReferenceManager.Instance.SetAITarget(transform);
         }
 
     }
@@ -82,15 +86,18 @@ public class SpaceShipController : NetworkBehaviour
         HandleAttack();
     }
 
+
     private void HandleMovement()
     {
         Vector2 mousePosition = Mouse.current.position.ReadValue();
         lookInput = mousePosition;
         mouseDistance.x = (lookInput.x - screenCenter.x) / screenCenter.y;
-        mouseDistance.y = (lookInput.y - screenCenter.y) / screenCenter.y;
+        mouseDistance.y = (lookInput.y - screenCenter.y) / screenCenter.x;
         mouseDistance = Vector2.ClampMagnitude(mouseDistance, 1f);
         rollValue = Mathf.Lerp(rollValue, rollInput, rollAcceleration * Time.deltaTime);
-        transform.Rotate(-mouseDistance.y * lookRateSpeed * Time.deltaTime, mouseDistance.x * lookRateSpeed * Time.deltaTime, rollValue * rollSpeed * Time.deltaTime, Space.Self);
+        transform.Rotate(-mouseDistance.y * lookRateSpeed * Time.deltaTime,
+                        mouseDistance.x * lookRateSpeed * Time.deltaTime,
+                        rollValue * rollSpeed * Time.deltaTime, Space.Self);
 
         activeForwardSpeed = Mathf.Lerp(activeForwardSpeed, moveInput.y * forwardSpeed, forwardAcceleration * Time.deltaTime);
         activeStrafeSpeed = Mathf.Lerp(activeStrafeSpeed, moveInput.x * strafeSpeed, strafeAcceleration * Time.deltaTime);
@@ -102,7 +109,7 @@ public class SpaceShipController : NetworkBehaviour
     }
     private void HandleAttack()
     {
-        if(controls.Player.Attack.IsPressed())
+        if (controls.Player.Attack.IsPressed())
         {
             fighter.Attack();
         }
@@ -118,6 +125,8 @@ public class SpaceShipController : NetworkBehaviour
         if (!IsOwner) { return; }
         moveInput = ctx.ReadValue<Vector2>();
         ResetRigidbody();
+        mechanicController.HandleToggleForwardTrail(false);
+        mechanicController.HandleToggleBackwardTrails(false);
         if (moveInput.y == 1)
         {
             mechanicController.HandleToggleForwardTrail(true);
@@ -126,11 +135,6 @@ public class SpaceShipController : NetworkBehaviour
         else if (moveInput.y == -1)
         {
             mechanicController.HandleToggleBackwardTrails(true);
-        }
-        else
-        {
-            mechanicController.HandleToggleForwardTrail(false);
-            mechanicController.HandleToggleBackwardTrails(false);
         }
     }
     private void OnRoll(InputAction.CallbackContext ctx)
