@@ -6,6 +6,7 @@ using UnityEngine;
 public class ReferenceManager : MonoBehaviour
 {
     [SerializeField] private List<AISpaceShipController> ais;
+    [SerializeField] private List<AIShooterController> aIShooterControllers;
     public static ReferenceManager Instance{get; private set;}
     private void Awake() {
         if (Instance == null)
@@ -22,6 +23,10 @@ public class ReferenceManager : MonoBehaviour
         foreach(var ai in ais)
         {
             ai.SetTarget(target);
+        }
+        foreach(var ai in aIShooterControllers)
+        {
+            ai.AddPlayers(target.GetComponent<SpaceShipController>());
         }
     }
     // private void Start() {

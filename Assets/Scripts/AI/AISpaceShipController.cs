@@ -4,12 +4,20 @@ using UnityEngine;
 
 public class AISpaceShipController : MonoBehaviour
 {
+
     [SerializeField] private Transform target;
+    [SerializeField] private Transform detectorPoint;
+    [Header("Attributes")]
     [SerializeField] private float movementSpeed = 10f;
     [SerializeField] private float rotationalDamp = .5f;
     [SerializeField] private float detectionDistance = 20f;
     [SerializeField] private float rayCastOffset = 2.5f;
     [SerializeField] private float stopDistance = 5f;
+    [SerializeField] private float offsetRate = 2f;
+    [Header("Reference")]
+    [SerializeField] private AISpaceShipFighter fighter;
+    [Header("Layer")]
+    [SerializeField] private LayerMask obstacleLayer;
 
     private bool isStopped = false;
 
@@ -19,11 +27,11 @@ public class AISpaceShipController : MonoBehaviour
         Fight();
         if (!isStopped)
         {
-            PathFinding();
+            FindPath();
             Move();
         }
-        
-        
+
+
     }
     private void Turn()
     {
@@ -36,7 +44,7 @@ public class AISpaceShipController : MonoBehaviour
         transform.position += transform.forward * movementSpeed * Time.deltaTime;
     }
 
-    private void PathFinding()
+    private void FindPath()
     {
         RaycastHit hit;
         Vector3 offset = Vector3.zero;
@@ -46,31 +54,47 @@ public class AISpaceShipController : MonoBehaviour
         Vector3 up = transform.position + transform.up * rayCastOffset;
         Vector3 down = transform.position - transform.up * rayCastOffset;
 
-        Debug.DrawRay(left, transform.forward * detectionDistance, Color.cyan);
-        Debug.DrawRay(right, transform.forward * detectionDistance, Color.cyan);
-        Debug.DrawRay(up, transform.forward * detectionDistance, Color.cyan);
-        Debug.DrawRay(down, transform.forward * detectionDistance, Color.cyan);
+        // Debug.DrawRay(left, transform.forward * detectionDistance, Color.cyan);
+        // Debug.DrawRay(right, transform.forward * detectionDistance, Color.cyan);
+        // Debug.DrawRay(up, transform.forward * detectionDistance, Color.cyan);
+        // Debug.DrawRay(down, transform.forward * detectionDistance, Color.cyan);
 
-        if (Physics.Raycast(left, transform.forward, out hit, detectionDistance))
+        if (Physics.Raycast(left, transform.forward, out hit, detectionDistance, obstacleLayer))
         {
-            offset += Vector3.right;
+            Debug.DrawLine(left, hit.point, Color.green);
+            offset += transform.right*offsetRate;
         }
-        else if (Physics.Raycast(right, transform.forward, out hit, detectionDistance))
+        else if (Physics.Raycast(right, transform.forward, out hit, detectionDistance, obstacleLayer))
         {
-            offset -= Vector3.right;
+            Debug.DrawLine(right, hit.point, Color.green);
+            offset -= transform.right*offsetRate;
         }
-        if (Physics.Raycast(up, transform.forward, out hit, detectionDistance))
+        else
         {
-            offset -= Vector3.up;
+            Debug.DrawRay(left, transform.forward * detectionDistance, Color.cyan);
+            Debug.DrawRay(right, transform.forward * detectionDistance, Color.cyan);
         }
-        else if (Physics.Raycast(down, transform.forward, out hit, detectionDistance))
+        if (Physics.Raycast(up, transform.forward, out hit, detectionDistance, obstacleLayer))
         {
-            offset += Vector3.up;
+            Debug.DrawLine(up, hit.point, Color.green);
+            offset -= transform.up*offsetRate;
         }
+        else if (Physics.Raycast(down, transform.forward, out hit, detectionDistance, obstacleLayer))
+        {
+            Debug.DrawLine(down, hit.point, Color.green);
+            offset += transform.up*offsetRate;
+        }
+        else
+        {
+            Debug.DrawRay(up, transform.forward * detectionDistance, Color.cyan);
+            Debug.DrawRay(down, transform.forward * detectionDistance, Color.cyan);
+        }
+
+
 
         if (offset != Vector3.zero)
         {
-            transform.Rotate(offset * 5f * Time.deltaTime);
+            transform.Rotate(offset * rotationalDamp * Time.deltaTime);
         }
         else
         {
@@ -83,7 +107,19 @@ public class AISpaceShipController : MonoBehaviour
         if (CheckDistance(target.position))
         {
             isStopped = true;
-            Turn();
+
+            if (Physics.Raycast(detectorPoint.position, detectorPoint.forward, out RaycastHit hit, stopDistance, obstacleLayer))
+            {
+                Debug.DrawRay(transform.position, hit.point, Color.red);
+                FindPath();
+                Move();
+            }
+            else
+            {
+                Turn();
+                fighter.Attack();
+            }
+
         }
         else
         {

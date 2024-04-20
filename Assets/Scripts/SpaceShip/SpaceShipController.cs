@@ -38,6 +38,7 @@ public class SpaceShipController : NetworkBehaviour
     private void Awake()
     {
         controls = new Controls();
+        rb = GetComponent<Rigidbody>();
     }
     private void OnEnable()
     {
@@ -51,7 +52,6 @@ public class SpaceShipController : NetworkBehaviour
     {
         if (IsOwner)
         {
-            rb = GetComponent<Rigidbody>();
             screenCenter.x = Screen.width / 2;
             screenCenter.y = Screen.height / 2;
             Cursor.lockState = CursorLockMode.Confined;
@@ -60,7 +60,6 @@ public class SpaceShipController : NetworkBehaviour
             mechanicController.HandleToggleBackwardTrails(false);
             InputRegister();
             CameraController.instance.targetPoint = followTransform;
-            rb.isKinematic = false;
             UIManager.Instance.CrossHair.SetSpaceShip(transform);
             ReferenceManager.Instance.SetAITarget(transform);
         }
@@ -104,8 +103,6 @@ public class SpaceShipController : NetworkBehaviour
         activeHoverSpeed = Mathf.Lerp(activeHoverSpeed, hoverInput * hoverSpeed, hoverAcceleration * Time.deltaTime);
         transform.position += transform.forward * activeForwardSpeed * thrustValue * Time.deltaTime;
         transform.position += (transform.right * activeStrafeSpeed * Time.deltaTime) + (transform.up * activeHoverSpeed * Time.deltaTime);
-        // Position.Value += transform.forward * activeForwardSpeed * thrustValue * Time.deltaTime;
-        // Position.Value += (transform.right * activeStrafeSpeed * Time.deltaTime) + (transform.up * activeHoverSpeed * Time.deltaTime);
     }
     private void HandleAttack()
     {
@@ -113,6 +110,12 @@ public class SpaceShipController : NetworkBehaviour
         {
             fighter.Attack();
         }
+    }
+    private void OnCollisionEnter(Collision other) {
+        ResetRigidbody();
+        activeForwardSpeed = 0f;
+        activeStrafeSpeed = 0f;
+        activeHoverSpeed = 0f;
     }
     private void ResetRigidbody()
     {
