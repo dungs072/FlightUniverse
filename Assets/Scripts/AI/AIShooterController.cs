@@ -13,13 +13,9 @@ public class AIShooterController : MonoBehaviour
 
     [Header("Attributes")]
     [SerializeField] private float detectionDistance = 50f;
-    [SerializeField] private float maxHorizontalAngel = 150f;
-    [SerializeField] private float minHorizontalAngel = -150f;
-    [SerializeField] private float maxVerticalAngel = 45;
-    [SerializeField] private float minVerticalAngel = -45;
     [SerializeField] private float fireRate = 0.5f;
     [SerializeField] private float rotationSpeed = 5f;
-    [SerializeField] private bool isDown = false;
+    [SerializeField] private LayerMask obstacleLayer;
     private bool canShoot = true;
     private Transform target;
     private void Update()
@@ -27,8 +23,13 @@ public class AIShooterController : MonoBehaviour
         if (target == null) { return; }
         if (IsInDistance(target.position))
         {
-            RotateToTarget();
-            Attack();
+            Vector3 directionToTarget = (target.position - transform.position).normalized;
+            if (!Physics.Raycast(transform.position, directionToTarget , out RaycastHit hit, detectionDistance, obstacleLayer))
+            {
+                RotateToTarget();
+                Attack();
+            }
+
         }
 
 
@@ -36,17 +37,8 @@ public class AIShooterController : MonoBehaviour
     }
     private void RotateToTarget()
     {
-        Vector3 directionToTarget = target.position - transform.position;
-        Quaternion targetRotation = Quaternion.LookRotation(directionToTarget, Vector3.up);
-        Vector3 targetEulerAngles = targetRotation.eulerAngles;
-        float clampedXRotation = Mathf.Clamp(targetEulerAngles.x, 360f - maxVerticalAngel, 360 + maxVerticalAngel);
-        float clampedYRotation = Mathf.Clamp(targetEulerAngles.y, minHorizontalAngel, maxHorizontalAngel);
-        if (isDown)
-        {
-            print(targetRotation.eulerAngles);
-            clampedXRotation = targetRotation.eulerAngles.x; //Mathf.Clamp(targetEulerAngles.x, 360 + minVerticalAngel, 360 + maxVerticalAngel);
-        }
-        transform.rotation = Quaternion.Slerp(transform.rotation, Quaternion.Euler(clampedXRotation, clampedYRotation, transform.rotation.eulerAngles.z), Time.deltaTime * rotationSpeed);
+        Vector3 directionToTarget = (target.position - transform.position).normalized;
+        transform.rotation = Quaternion.Lerp(transform.rotation, Quaternion.LookRotation(directionToTarget), rotationSpeed * Time.deltaTime);
     }
 
     private void Attack()

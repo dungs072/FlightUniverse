@@ -5,9 +5,13 @@ using UnityEngine;
 
 public class ReferenceManager : MonoBehaviour
 {
+    
     [SerializeField] private List<AISpaceShipController> ais;
     [SerializeField] private List<AIShooterController> aIShooterControllers;
+    [SerializeField] private RocketShooter rocketShooter;
     public static ReferenceManager Instance{get; private set;}
+    private GameObject player;
+    public GameObject Player{get{return player;}}
     private void Awake() {
         if (Instance == null)
         {
@@ -17,6 +21,10 @@ public class ReferenceManager : MonoBehaviour
         {
             DontDestroyOnLoad(Instance);
         }
+    }
+    public void SetPlayer(GameObject player)
+    {
+        this.player = player;   
     }
     public void SetAITarget(Transform target)
     {
@@ -28,6 +36,7 @@ public class ReferenceManager : MonoBehaviour
         {
             ai.AddPlayers(target.GetComponent<SpaceShipController>());
         }
+        rocketShooter.SetTarget(target);
     }
     // private void Start() {
     //     NetworkManager.Singleton.ConnectionApprovalCallback=ApprovalCheck;

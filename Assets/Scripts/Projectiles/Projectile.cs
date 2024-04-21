@@ -26,7 +26,8 @@ public class Projectile : NetworkBehaviour
     {
         yield return null;
         rb.AddForce(transform.forward * forceSpeed, ForceMode.Impulse);
-        StartCoroutine(DestroyProjectile());
+        yield return new WaitForSeconds(timeDestroyed);
+        NetworkObjectPool.Singleton.ReturnNetworkObject(GetComponent<NetworkObject>(), projectilePrefab);
 
     }
     private void OnDisable()
@@ -36,24 +37,24 @@ public class Projectile : NetworkBehaviour
         rb.angularVelocity = Vector3.zero;
 
     }
-    private void OnCollisionEnter(Collision other) {
-
-        var poolObj = NetworkObjectPool.Singleton.GetNetworkObject(hitVFX,transform.position,transform.rotation);
-        if(poolObj.TryGetComponent(out VFXControls vFXControls))
+    private void OnCollisionEnter(Collision other)
+    {
+        StopAllCoroutines();
+        if(!isActiveAndEnabled){return;}
+        var poolObj = NetworkObjectPool.Singleton.GetNetworkObject(hitVFX, transform.position, transform.rotation);
+        if (poolObj.TryGetComponent(out ObjectDisable vfx))
         {
-            vFXControls.SetVFXPrefab(poolObj.gameObject);
+            vfx.SetPrefab(hitVFX);
         }
-        if(other.transform.TryGetComponent<Rigidbody>(out Rigidbody rb))
+        NetworkObjectPool.Singleton.ReturnNetworkObject(GetComponent<NetworkObject>(), projectilePrefab);
+        if (other.transform.TryGetComponent<Rigidbody>(out Rigidbody rb))
         {
             rb.velocity = Vector3.zero;
             rb.angularVelocity = Vector3.zero;
         }
-        NetworkObjectPool.Singleton.ReturnNetworkObject(GetComponent<NetworkObject>(), projectilePrefab);
-    }
-    private IEnumerator DestroyProjectile()
-    {
-        yield return new WaitForSeconds(timeDestroyed);
-        NetworkObjectPool.Singleton.ReturnNetworkObject(GetComponent<NetworkObject>(), projectilePrefab);
+        
+        
+
     }
     public void SetProjectilePrefab(GameObject prefab)
     {
@@ -61,6 +62,6 @@ public class Projectile : NetworkBehaviour
     }
     public void SetShooter(Transform shooter)
     {
-        this.shooter = shooter; 
+        this.shooter = shooter;
     }
 }

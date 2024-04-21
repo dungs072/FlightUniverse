@@ -31,8 +31,21 @@ public class SpaceShipController : NetworkBehaviour
     private float rollInput;
     private float hoverInput;
     private float thrustValue = 1f;
+    private bool canControl = false;
     private Controls controls;
     private Rigidbody rb;
+    public MechanicController MechanicController{get{return mechanicController;}}
+    public bool CanControl
+    {
+        get
+        {
+            return canControl;
+        }
+        set
+        {
+            canControl = value;
+        } 
+    }
     // network vars
     //private NetworkVariable<Vector3> Position = new NetworkVariable<Vector3>();
     private void Awake()
@@ -54,8 +67,6 @@ public class SpaceShipController : NetworkBehaviour
         {
             screenCenter.x = Screen.width / 2;
             screenCenter.y = Screen.height / 2;
-            Cursor.lockState = CursorLockMode.Confined;
-            Cursor.visible = false;
             mechanicController.HandleToggleForwardTrail(false);
             mechanicController.HandleToggleBackwardTrails(false);
             InputRegister();
@@ -78,6 +89,10 @@ public class SpaceShipController : NetworkBehaviour
         // controls.Player.Attack.performed+=OnAttack;
         // controls.Player.Attack.canceled += OnAttack;
     }
+    public void SetMechanicController(MechanicController mechanicController)
+    {
+        this.mechanicController = mechanicController;
+    }
     private void Update()
     {
         if (!IsOwner) { return; }
@@ -88,6 +103,7 @@ public class SpaceShipController : NetworkBehaviour
 
     private void HandleMovement()
     {
+        if(!CanControl){return;}
         Vector2 mousePosition = Mouse.current.position.ReadValue();
         lookInput = mousePosition;
         mouseDistance.x = (lookInput.x - screenCenter.x) / screenCenter.y;
@@ -106,12 +122,14 @@ public class SpaceShipController : NetworkBehaviour
     }
     private void HandleAttack()
     {
+        if(!CanControl){return;}
         if (controls.Player.Attack.IsPressed())
         {
             fighter.Attack();
         }
     }
-    private void OnCollisionEnter(Collision other) {
+    private void OnCollisionEnter(Collision other)
+    {
         ResetRigidbody();
         activeForwardSpeed = 0f;
         activeStrafeSpeed = 0f;
@@ -126,43 +144,80 @@ public class SpaceShipController : NetworkBehaviour
     private void OnMove(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
+        if(!CanControl){return;}
         moveInput = ctx.ReadValue<Vector2>();
         ResetRigidbody();
         mechanicController.HandleToggleForwardTrail(false);
         mechanicController.HandleToggleBackwardTrails(false);
+        ToggleForwardTrailServerRpc(false);
+        ToggleBackwardTrailsServerRpc(false);
         if (moveInput.y == 1)
         {
             mechanicController.HandleToggleForwardTrail(true);
+            ToggleForwardTrailServerRpc(true);
 
         }
         else if (moveInput.y == -1)
         {
             mechanicController.HandleToggleBackwardTrails(true);
+            ToggleBackwardTrailsServerRpc(true);
         }
     }
     private void OnRoll(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
+        if(!CanControl){return;}
         rollInput = ctx.ReadValue<float>();
     }
     private void OnUpDown(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
+        if(!CanControl){return;}
         hoverInput = ctx.ReadValue<float>();
     }
     private void OnThrust(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
+        if(!CanControl){return;}
         thrustValue = thrustSpeed;
     }
     private void OnUnThrust(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
+        if(!CanControl){return;}
         thrustValue = 1f;
     }
     private void OnAttack(InputAction.CallbackContext ctx)
     {
+        if (!IsOwner) { return; }
+        if(!CanControl){return;}
         fighter.Attack();
+    }
+    #endregion
+
+
+    #region Network
+    [ServerRpc]
+    private void ToggleForwardTrailServerRpc(bool state)
+    {
+        ToggleForwardTrailClientRpc(state);
+    }
+    [ClientRpc]
+    private void ToggleForwardTrailClientRpc(bool state)
+    {
+        if (IsOwner) { return; }
+        mechanicController.ToggleForwardTrail(state);
+    }
+    [ServerRpc]
+    private void ToggleBackwardTrailsServerRpc(bool state)
+    {
+        ToggleBackwardTrailsClientRpc(state);
+    }
+    [ClientRpc]
+    private void ToggleBackwardTrailsClientRpc(bool state)
+    {
+        if (IsOwner) { return; }
+        mechanicController.ToggleBackwardTrails(state);
     }
     #endregion
 }

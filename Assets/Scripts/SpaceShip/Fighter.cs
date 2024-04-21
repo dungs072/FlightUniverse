@@ -5,9 +5,7 @@ using UnityEngine;
 
 public class Fighter : NetworkBehaviour
 {
-    [SerializeField] private GameObject projectilePrefab;
-    [SerializeField] private List<Transform> spawnProjectilePos;
-    [SerializeField] private float fireRate = 0.3f;
+    [SerializeField] private InfoFighter infoFighter;
     private bool canFire = true;
     public void Attack()
     {
@@ -15,17 +13,21 @@ public class Fighter : NetworkBehaviour
     }
     private void Fire()
     {
-        foreach (var pos in spawnProjectilePos)
+        foreach (var pos in infoFighter.SpawnProjectilePos)
         {
-            var obj = NetworkObjectPool.Singleton.GetNetworkObject(projectilePrefab, pos.position, pos.rotation);
+            var obj = NetworkObjectPool.Singleton.GetNetworkObject(infoFighter.ProjectilePrefab, pos.position, pos.rotation);
             obj.transform.forward = pos.forward;
             if (obj.TryGetComponent(out Projectile projectile))
             {
-                projectile.SetProjectilePrefab(projectilePrefab);
+                projectile.SetProjectilePrefab(infoFighter.ProjectilePrefab);
             }
 
         }
         canFire = true;
+    }
+    public void SetInfoFighter(InfoFighter infoFighter)
+    {
+        this.infoFighter = infoFighter;
     }
     [ServerRpc]
     private void FireServerRpc()
@@ -37,6 +39,6 @@ public class Fighter : NetworkBehaviour
     {
         if (!canFire) { return; }
         canFire = false;
-        Invoke(nameof(Fire), fireRate);
+        Invoke(nameof(Fire), infoFighter.FireRate);
     }
 }
