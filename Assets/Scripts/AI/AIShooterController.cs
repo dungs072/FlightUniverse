@@ -6,6 +6,7 @@ using UnityEngine.UIElements;
 public class AIShooterController : MonoBehaviour
 {
     [Header("Reference")]
+    [SerializeField] private BossSound bossSound;
     [SerializeField] private GameObject projectilePrefab;
     [SerializeField] private List<Transform> spawnProjectilePos;
 
@@ -31,9 +32,6 @@ public class AIShooterController : MonoBehaviour
             }
 
         }
-
-
-
     }
     private void RotateToTarget()
     {
@@ -57,7 +55,7 @@ public class AIShooterController : MonoBehaviour
             {
                 projectile.SetProjectilePrefab(projectilePrefab);
             }
-
+            bossSound.PlayRiffleShootSound();
         }
         canShoot = true;
     }

@@ -5,6 +5,7 @@ using UnityEngine;
 
 public class Projectile : NetworkBehaviour
 {
+    [SerializeField] private int damage = 10;
     [SerializeField] private TrailRenderer trailRenderer;
     [SerializeField] private float forceSpeed = 100f;
     [SerializeField] private float timeDestroyed = 5f;
@@ -40,7 +41,7 @@ public class Projectile : NetworkBehaviour
     private void OnCollisionEnter(Collision other)
     {
         StopAllCoroutines();
-        if(!isActiveAndEnabled){return;}
+        if (!isActiveAndEnabled) { return; }
         var poolObj = NetworkObjectPool.Singleton.GetNetworkObject(hitVFX, transform.position, transform.rotation);
         if (poolObj.TryGetComponent(out ObjectDisable vfx))
         {
@@ -49,11 +50,19 @@ public class Projectile : NetworkBehaviour
         NetworkObjectPool.Singleton.ReturnNetworkObject(GetComponent<NetworkObject>(), projectilePrefab);
         if (other.transform.TryGetComponent<Rigidbody>(out Rigidbody rb))
         {
-            rb.velocity = Vector3.zero;
-            rb.angularVelocity = Vector3.zero;
+            if (!rb.isKinematic)
+            {
+                rb.velocity = Vector3.zero;
+                rb.angularVelocity = Vector3.zero;
+            }
+
         }
-        
-        
+        if(other.transform.TryGetComponent(out DamageHandler damageHandler))
+        {
+            damageHandler.TakeDamage(damage);
+        }
+
+
 
     }
     public void SetProjectilePrefab(GameObject prefab)

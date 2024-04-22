@@ -52,17 +52,19 @@ public class PlayerInitialization : NetworkBehaviour
             Vector3 direction = (data.DestinationPosition.position - transform.position).normalized;
             Quaternion quaternion = Quaternion.LookRotation(direction);
             transform.rotation = Quaternion.Slerp(transform.rotation, quaternion, Time.deltaTime * 5f);
+            spaceShipController.GetComponent<PlayerSound>().PlayThrustAudio();
             if (IsNearDestination(data.DestinationPosition.position))
             {
                 value = Mathf.Max(value - Time.deltaTime * fadeoutLightSpeedVFX, 0f);
                 currentSpeed -= 0.2f;
-                if (currentSpeed <= 0f)
+                if (value <= 0f||currentSpeed<=0)
                 {
                     break;
                 }
                 lightSpeedVFX.SetFloat(WarpAmount, value);
             }
         }
+        spaceShipController.GetComponent<PlayerSound>().StopThrustAudio();
         spaceShipController.CanControl = true;
         lightSpeedVFX.SetFloat(WarpAmount, 0);
         spaceShipController.MechanicController.ToggleForwardTrail(false);

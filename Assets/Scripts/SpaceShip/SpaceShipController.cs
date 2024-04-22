@@ -5,12 +5,15 @@ using Unity.Netcode;
 using UnityEngine.InputSystem;
 public class SpaceShipController : NetworkBehaviour
 {
+    [Header("General")]
+    [SerializeField] private Health health;
     [Header("Attack")]
     [SerializeField] private Fighter fighter;
     [Header("Mechanic")]
     [SerializeField] private MechanicController mechanicController;
     [SerializeField] private Transform followTransform;
     [SerializeField] private LayerMask layerMask;
+    [SerializeField] private PlayerSound playerSound;
 
     [Header("Attributes")]
     [SerializeField] private float forwardSpeed = 25f;
@@ -34,7 +37,7 @@ public class SpaceShipController : NetworkBehaviour
     private bool canControl = false;
     private Controls controls;
     private Rigidbody rb;
-    public MechanicController MechanicController{get{return mechanicController;}}
+    public MechanicController MechanicController { get { return mechanicController; } }
     public bool CanControl
     {
         get
@@ -44,7 +47,7 @@ public class SpaceShipController : NetworkBehaviour
         set
         {
             canControl = value;
-        } 
+        }
     }
     // network vars
     //private NetworkVariable<Vector3> Position = new NetworkVariable<Vector3>();
@@ -73,13 +76,15 @@ public class SpaceShipController : NetworkBehaviour
             CameraController.instance.targetPoint = followTransform;
             UIManager.Instance.CrossHair.SetSpaceShip(transform);
             ReferenceManager.Instance.SetAITarget(transform);
+            health.OnHealthChanged+=ChangedHealth;
         }
 
     }
+
     private void InputRegister()
     {
         controls.Player.Move.performed += OnMove;
-        controls.Player.Move.canceled += OnMove;
+        controls.Player.Move.canceled += OnStopMove;
         controls.Player.Roll.performed += OnRoll;
         controls.Player.Roll.canceled += OnRoll;
         controls.Player.UpDown.performed += OnUpDown;
@@ -88,6 +93,10 @@ public class SpaceShipController : NetworkBehaviour
         controls.Player.Thrust.canceled += OnUnThrust;
         // controls.Player.Attack.performed+=OnAttack;
         // controls.Player.Attack.canceled += OnAttack;
+    }
+    private void ChangedHealth(int currentHealth, int maxHealth)
+    {
+        UIManager.Instance.SetPlayerHealthBarValue(currentHealth,maxHealth);
     }
     public void SetMechanicController(MechanicController mechanicController)
     {
@@ -103,7 +112,7 @@ public class SpaceShipController : NetworkBehaviour
 
     private void HandleMovement()
     {
-        if(!CanControl){return;}
+        if (!CanControl) { return; }
         Vector2 mousePosition = Mouse.current.position.ReadValue();
         lookInput = mousePosition;
         mouseDistance.x = (lookInput.x - screenCenter.x) / screenCenter.y;
@@ -122,11 +131,15 @@ public class SpaceShipController : NetworkBehaviour
     }
     private void HandleAttack()
     {
-        if(!CanControl){return;}
+        if (!CanControl) { return; }
         if (controls.Player.Attack.IsPressed())
         {
             fighter.Attack();
         }
+        // else
+        // {
+        //     fighter.ToggleLaser(false);
+        // }
     }
     private void OnCollisionEnter(Collision other)
     {
@@ -144,9 +157,24 @@ public class SpaceShipController : NetworkBehaviour
     private void OnMove(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
-        if(!CanControl){return;}
+        if (!CanControl) { return; }
         moveInput = ctx.ReadValue<Vector2>();
+        playerSound.PlayMovingAudio();
         ResetRigidbody();
+        HandleTrail();
+    }
+    private void OnStopMove(InputAction.CallbackContext ctx)
+    {
+        if (!IsOwner) { return; }
+        if (!CanControl) { return; }
+        moveInput = ctx.ReadValue<Vector2>();
+        playerSound.StopMovingAudio();
+        ResetRigidbody();
+        HandleTrail();
+    }
+
+    private void HandleTrail()
+    {
         mechanicController.HandleToggleForwardTrail(false);
         mechanicController.HandleToggleBackwardTrails(false);
         ToggleForwardTrailServerRpc(false);
@@ -163,34 +191,44 @@ public class SpaceShipController : NetworkBehaviour
             ToggleBackwardTrailsServerRpc(true);
         }
     }
+
     private void OnRoll(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
-        if(!CanControl){return;}
+        if (!CanControl) { return; }
         rollInput = ctx.ReadValue<float>();
+        HandleTrail();
     }
     private void OnUpDown(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
-        if(!CanControl){return;}
+        if (!CanControl) { return; }
         hoverInput = ctx.ReadValue<float>();
     }
     private void OnThrust(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
-        if(!CanControl){return;}
+        if (!CanControl) { return; }
         thrustValue = thrustSpeed;
+        playerSound.StopMovingAudio();
+        playerSound.PlayThrustAudio();
+        
     }
     private void OnUnThrust(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
-        if(!CanControl){return;}
+        if (!CanControl) { return; }
         thrustValue = 1f;
+        if(moveInput==Vector2.zero)
+        {
+            playerSound.StopThrustAudio();
+        }
+        
     }
     private void OnAttack(InputAction.CallbackContext ctx)
     {
         if (!IsOwner) { return; }
-        if(!CanControl){return;}
+        if (!CanControl) { return; }
         fighter.Attack();
     }
     #endregion
